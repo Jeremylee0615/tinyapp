@@ -4,7 +4,7 @@ const PORT = 8080; // default port 8080
 
 app.use(express.urlencoded({ extended: true }));
 
-app.set("view engine", "ejs")
+app.set("view engine", "ejs");
 
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -50,23 +50,29 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
-  const id = req.params.id
-  const longURL = urlDatabase[id]
-  const templateVars = {id, longURL}
+  const id = req.params.id;
+  const longURL = urlDatabase[id];
+  const templateVars = {id, longURL};
   res.render("urls_show", templateVars);
 
 });
 
 app.get("/u/:id", (req, res) => {
-  const id = req.params.id
-  const longURL = urlDatabase[id]
+  const id = req.params.id;
+  const longURL = urlDatabase[id];
   res.redirect(longURL);
 });
 
+app.post("/urls/:id/delete", (req,res) => {
+  const id = req.params.id;
+  delete urlDatabase[id];
+  res.redirect("/urls");
+});
+
 app.post("/urls", (req, res) => {
-  const shortURL = generateRandomString()
-  urlDatabase[shortURL] = req.body.longURL
-  res.redirect(`/urls/${shortURL}`); 
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = req.body.longURL;
+  res.redirect(`/urls/${shortURL}`);
 });
 
 
