@@ -38,7 +38,7 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
-
+//tiny app - localhost:8080/urls begins
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
@@ -54,7 +54,6 @@ app.get("/urls/:id", (req, res) => {
   const longURL = urlDatabase[id];
   const templateVars = {id, longURL};
   res.render("urls_show", templateVars);
-
 });
 
 app.get("/u/:id", (req, res) => {
@@ -63,18 +62,23 @@ app.get("/u/:id", (req, res) => {
   res.redirect(longURL);
 });
 
-app.post("/urls/:id/delete", (req,res) => {
-  const id = req.params.id;
-  delete urlDatabase[id];
-  res.redirect("/urls");
-});
-
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = req.body.longURL;
   res.redirect(`/urls/${shortURL}`);
 });
 
+app.post("/urls/:id/edit", (req,res) => {
+  const id = req.params.id;
+  urlDatabase[id] = req.body.longURL;
+  res.redirect("/urls");
+});
+
+app.post("/urls/:id/delete", (req,res) => {
+  const id = req.params.id;
+  delete urlDatabase[id];
+  res.redirect("/urls");
+});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
