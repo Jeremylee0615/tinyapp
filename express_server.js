@@ -11,43 +11,62 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
+const generateRandomString = () => {
+  let upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let lowerCase = upperCase.toLowerCase();
+  let numeric = '1234567890';
+  let inputs = upperCase + lowerCase + numeric;
+  let result = '';
+  let combinationLength = 6;
+  for (let i = 0; i < combinationLength; i++) {
+    result += inputs.charAt(Math.round(Math.random() * inputs.length));
+  }
+  return result;
+};
+
+
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
+});
+
+app.get("/", (req, res) => {
+  res.send("Hello!");
 });
 
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
-app.get("/set", (req, res) => {
-  const a = 1;
-  res.send(`a = ${a}`);
- });
- 
-app.get("/fetch", (req, res) => {
-  res.send(`a = ${a}`);
- });
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
-app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
-  res.send("Ok"); // Respond with 'Ok' (we will replace this)
-});
+
 
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: "http://www.lighthouselabs.ca"/* What goes here? */ };
+  const id = req.params.id
+  const longURL = urlDatabase[id]
+  const templateVars = {id, longURL}
   res.render("urls_show", templateVars);
+
+});
+
+app.get("/u/:id", (req, res) => {
+  const id = req.params.id
+  const longURL = urlDatabase[id]
+  res.redirect(longURL);
+});
+
+app.post("/urls", (req, res) => {
+  const shortURL = generateRandomString()
+  urlDatabase[shortURL] = req.body.longURL
+  res.redirect(`/urls/${shortURL}`); 
 });
 
 
@@ -56,9 +75,7 @@ app.listen(PORT, () => {
 });
 
 
-const generateRandomString = () => {
-  let result = Math.random().toString(36).slice(2, 8);
-  return result;
-};
+
+
 
 
