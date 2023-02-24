@@ -1,8 +1,8 @@
 const express = require("express");
-var cookieParser = require('cookie-parser')
+let cookieParser = require('cookie-parser');
 
 const app = express();
-const PORT = 8080; 
+const PORT = 8080;
 
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
@@ -46,27 +46,27 @@ app.get("/hello", (req, res) => {
 
 ////////////////GETS////////////////
 
-// updated the headlines for it to display the username 
+// updated the headlines for it to display the username
 app.get("/urls", (req, res) => {
   //const templateVars = { urls: urlDatabase };
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies['username'] };  
+    username: req.cookies['username'] };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = { 
+  const templateVars = {
     urls: urlDatabase,
     username: req.cookies["username"]
-  }
+  };
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:id", (req, res) => {
   const id = req.params.id;
   const longURL = urlDatabase[id];
-  const username = req.cookies["username"]
+  const username = req.cookies["username"];
   const templateVars = {id, longURL, username};
   res.render("urls_show", templateVars);
 });
@@ -88,10 +88,10 @@ app.post("/urls", (req, res) => {
 
 app.post("/login", (req, res) => {
   if (req.body.username) {
-    const username = req.body.username
+    const username = req.body.username;
     res.cookie("username", username);
-    }
-    res.redirect("/urls");
+  }
+  res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
