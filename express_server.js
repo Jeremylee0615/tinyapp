@@ -1,9 +1,10 @@
 const express = require("express");
-let cookieParser = require('cookie-parser');
-
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
 const app = express();
 const PORT = 8080;
 
+app.use(bodyParser.urlencoded({ extended: true}));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
@@ -27,56 +28,76 @@ const generateRandomString = () => {
   return result;
 };
 
+//Global users' set information
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
 
+
+const check_If_In_Use = (email, userDatabase) => {
+  for (userId in userDatabase) {
+    if (userDatabase[userId].email === email) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
+
+//////////////tiny app - localhost:8080/urls begins//////////////
+
+////////////////GETS////////////////
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
-
-//tiny app - localhost:8080/urls begins
-
-
-////////////////GETS////////////////
-
 // updated the headlines for it to display the username
 app.get("/urls", (req, res) => {
-  //const templateVars = { urls: urlDatabase };
+  const user_Id = req.cookies["user_Id"]
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies['username'] };
+    user_Id: user_Id
+  };
   res.render("urls_index", templateVars);
 });
 
+//create new URL page
 app.get("/urls/new", (req, res) => {
+  const user_Id = req.cookies["user_Id"]
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies["username"]
+    user_Id: user_Id
   };
   res.render("urls_new", templateVars);
 });
 
+//long ID page
 app.get("/urls/:id", (req, res) => {
   const id = req.params.id;
   const longURL = urlDatabase[id];
-  const username = req.cookies["username"];
-  const templateVars = {id, longURL, username};
+  const user_Id = req.cookies["user_Id"];
+  const templateVars = {id, longURL, user_Id};
   res.render("urls_show", templateVars);
 });
 
+//register page
 app.get("/register", (req, res) => {
-  const username = req.cookies["username"];
-  const templateVars = { username };
+  const user_Id = req.cookies["user_Id"];
+  const templateVars = { user_Id };
   res.render("register", templateVars);
 });
 
+// tinyapp/u/shortURL page
 app.get("/u/:id", (req, res) => {
   const id = req.params.id;
   const longURL = urlDatabase[id];
@@ -92,17 +113,41 @@ app.post("/urls", (req, res) => {
 
 app.post("/login", (req, res) => {
   if (req.body.username) {
-    const username = req.body.username;
-    res.cookie("username", username);
+    const user_Id = req.body.user_id;
+    res.cookie("user_id", user_Id);
   }
   res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
+  const user_Id = req.body["user_Id"]
+  res.clearCookie("user_id", user_Id);
   res.redirect("/urls");
 });
 
+app.post("/register", (req,res) => {
+  const user_Id = generateRandomString();
+  console.log ('this is req.body', req.body) 
+  const user_Password = req.body.password
+  const accountEmail = req.body.email
+ 
+    if(!user_Password || !accountEmail) {
+    return res.status(400).send ("Please enter a valid information! ⛔")  
+  } else if (check_If_In_Use(accountEmail, users)) {
+    return res.status(400).send ("Sorry, the email you registered is already in use 🚫 ")
+  }
+  
+  const newUser = {
+    id: user_Id,
+    password: user_Password,
+    email: accountEmail
+  };
+
+  users[user_Id] = newUser 
+  res.cookie("user_Id", user_Id) 
+  res.redirect("/urls")
+
+})
 
 app.post("/urls/:id/edit", (req,res) => {
   const id = req.params.id;
