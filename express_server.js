@@ -43,6 +43,13 @@ const users = {
   },
 };
 
+const usersAccountInfo = (email, users) => {
+  for (userId in users) {
+    if (users[userId].email === email) {
+      return users[userId]
+    }
+  }
+}
 
 const checkIfInUse = (email, userDatabase) => {
   for (userId in userDatabase) {
@@ -125,17 +132,27 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  if (req.body.username) {
-    const userId = req.body.userId;
-    res.cookie("userId", userId);
-  }
-  res.redirect("/urls");
-});
+    const emailEntered = req.body.email;  
+    const passwordEntered = req.body.password;
+    if (usersAccountInfo(emailEntered, users)) {
+      const userPassword = usersAccountInfo(emailEntered, users).password
+      console.log('users from database:', usersAccountInfo(emailEntered, users))
+      const userId = usersAccountInfo(emailEntered, users).id;
+      if (userPassword !== passwordEntered) {
+        res.status(403).send("Password does not match. ⛔")
+      } else {
+        res.cookie("userId", userId)
+        res.redirect("/urls");
+      }     
+    } else {
+      res.status(403).send("The email does not exist. ⛔")
+    }
+  });
 
 app.post("/logout", (req, res) => {
   const userId = req.body["userId"];
   res.clearCookie("userId", userId);
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 
 app.post("/register", (req,res) => {
@@ -157,8 +174,8 @@ app.post("/register", (req,res) => {
   };
 
   users[userId] = newUser;
-  res.cookie("userId", userId);
-  res.redirect("/urls");
+  //res.cookie("userId", userId);
+  res.redirect("/login");
 
 });
 
