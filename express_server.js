@@ -28,6 +28,7 @@ const generateRandomString = () => {
   return result;
 };
 
+
 //Global users' set information
 const users = {
   userRandomID: {
@@ -43,40 +44,42 @@ const users = {
 };
 
 
-const check_If_In_Use = (email, userDatabase) => {
+const checkIfInUse = (email, userDatabase) => {
   for (userId in userDatabase) {
     if (userDatabase[userId].email === email) {
       return true;
     }
   }
   return false;
-}
+};
 
 
 
 //////////////tiny app - localhost:8080/urls begins//////////////
+
+
 
 ////////////////GETS////////////////
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-// updated the headlines for it to display the username
+//updated the headlines for it to display the username
 app.get("/urls", (req, res) => {
-  const user_Id = req.cookies["user_Id"]
+  const userId = req.cookies["userId"];
   const templateVars = {
     urls: urlDatabase,
-    user_Id: user_Id
+    userId: userId
   };
   res.render("urls_index", templateVars);
 });
 
 //create new URL page
 app.get("/urls/new", (req, res) => {
-  const user_Id = req.cookies["user_Id"]
+  const userId = req.cookies["userId"];
   const templateVars = {
     urls: urlDatabase,
-    user_Id: user_Id
+    userId: userId
   };
   res.render("urls_new", templateVars);
 });
@@ -85,15 +88,15 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:id", (req, res) => {
   const id = req.params.id;
   const longURL = urlDatabase[id];
-  const user_Id = req.cookies["user_Id"];
-  const templateVars = {id, longURL, user_Id};
+  const userId = req.cookies["userId"];
+  const templateVars = {id, longURL, userId};
   res.render("urls_show", templateVars);
 });
 
 //register page
 app.get("/register", (req, res) => {
-  const user_Id = req.cookies["user_Id"];
-  const templateVars = { user_Id };
+  const userId = req.cookies["userId"];
+  const templateVars = { userId };
   res.render("register", templateVars);
 });
 
@@ -104,6 +107,8 @@ app.get("/u/:id", (req, res) => {
   res.redirect(longURL);
 });
 
+
+
 ////////////////POSTS////////////////
 app.post("/urls", (req, res) => {
   const shortURL = generateRandomString();
@@ -113,41 +118,41 @@ app.post("/urls", (req, res) => {
 
 app.post("/login", (req, res) => {
   if (req.body.username) {
-    const user_Id = req.body.user_id;
-    res.cookie("user_id", user_Id);
+    const userId = req.body.userId;
+    res.cookie("userId", userId);
   }
   res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
-  const user_Id = req.body["user_Id"]
-  res.clearCookie("user_id", user_Id);
+  const userId = req.body["userId"];
+  res.clearCookie("userId", userId);
   res.redirect("/urls");
 });
 
 app.post("/register", (req,res) => {
-  const user_Id = generateRandomString();
-  console.log ('this is req.body', req.body) 
-  const user_Password = req.body.password
-  const accountEmail = req.body.email
+  const userId = generateRandomString();
+  //console.log ('this is req.body', req.body)
+  const userPassword = req.body.password;
+  const accountEmail = req.body.email;
  
-    if(!user_Password || !accountEmail) {
-    return res.status(400).send ("Please enter a valid information! ⛔")  
-  } else if (check_If_In_Use(accountEmail, users)) {
-    return res.status(400).send ("Sorry, the email you registered is already in use 🚫 ")
+  if (!userPassword || !accountEmail) {
+    return res.status(400).send("Please enter a valid information! ⛔");
+  } else if (checkIfInUse(accountEmail, users)) {
+    return res.status(400).send("Sorry, the email you registered is already in use 🚫 ");
   }
   
   const newUser = {
-    id: user_Id,
-    password: user_Password,
+    id: userId,
+    password: userPassword,
     email: accountEmail
   };
 
-  users[user_Id] = newUser 
-  res.cookie("user_Id", user_Id) 
-  res.redirect("/urls")
+  users[userId] = newUser;
+  res.cookie("userId", userId);
+  res.redirect("/urls");
 
-})
+});
 
 app.post("/urls/:id/edit", (req,res) => {
   const id = req.params.id;
@@ -161,13 +166,6 @@ app.post("/urls/:id/delete", (req,res) => {
   res.redirect("/urls");
 });
 
-
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
-
-
-
-
-
