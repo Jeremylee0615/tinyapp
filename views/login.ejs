@@ -10,15 +10,16 @@
       integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS"
       crossorigin="anonymous"
     />
-    <title> Sign up with TinyApp 🖊️</title>
+    <title> Log in - TinyApp 🔑</title>
   </head>
   <body>
     <%- include('partials/_header') %>
     <div class="card text-center">
     <br/>
     <p>
-    <h2>&nbsp;&nbsp;&nbsp;Register Your Account</h2>
-    <form method="POST" action="/register">
+    <h2>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;TinyApp 🌐</h2>
+    <h7>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="/urls/new">Where you can add your favourite URLs</a></h7>
+    <form method="POST" action="/login">
       <label for="email">Email</label>
         <input 
           id="email" 
@@ -35,11 +36,11 @@
           required />
     <br/>   
     <br/>   
-    &nbsp;&nbsp;&nbsp;<button type="submit" class="btn btn-outline-success"> Register ! </button>
+    &nbsp;&nbsp;&nbsp;&nbsp;<button type="submit" class="btn btn-outline-success"> Log In ! </button>
     <br/>
-      <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;already have account? <a href="/login">Log in</a>🔑</p>
+      <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;First time with TinyApp? <a href="/register">Register </a>🖊️</p>
     </form>
     </p>
     </div>   
-  </body>
+  </body>  
 </html>

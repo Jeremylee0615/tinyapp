@@ -93,6 +93,14 @@ app.get("/urls/:id", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+//login page
+app.get("/login", (req, res) => {
+  const userId = req.cookies["userId"];
+  const templateVars = { userId };
+  res.render("login", templateVars);
+});
+
+
 //register page
 app.get("/register", (req, res) => {
   const userId = req.cookies["userId"];
