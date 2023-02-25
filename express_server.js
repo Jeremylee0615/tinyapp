@@ -43,6 +43,8 @@ const users = {
   },
 };
 
+
+
 const usersAccountInfo = (email, users) => {
   for (userId in users) {
     if (users[userId].email === email) {
@@ -83,6 +85,9 @@ app.get("/urls", (req, res) => {
 
 //create new URL page
 app.get("/urls/new", (req, res) => {
+  if (!req.cookies["userId"]){
+    return res.redirect ("/login")
+  }
   const userId = req.cookies["userId"];
   const templateVars = {
     urls: urlDatabase,
@@ -126,9 +131,12 @@ app.get("/u/:id", (req, res) => {
 
 ////////////////POSTS////////////////
 app.post("/urls", (req, res) => {
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
-  res.redirect(`/urls/${shortURL}`);
+  if (!req.cookies["userId"]) {
+    res.status(400).send("Oops, we can\'t find that URL. Please check if you have entered correct URLs or Create your favourite URLs first⛔")
+  }
+    const shortURL = generateRandomString();
+    urlDatabase[shortURL] = req.body.longURL;
+    res.redirect(`/urls/${shortURL}`);
 });
 
 app.post("/login", (req, res) => {
@@ -141,7 +149,7 @@ app.post("/login", (req, res) => {
       if (userPassword !== passwordEntered) {
         res.status(403).send("Password does not match. ⛔")
       } else {
-        res.cookie("userId", userId)
+        //res.cookie("userId", userId)
         res.redirect("/urls");
       }     
     } else {
@@ -157,7 +165,6 @@ app.post("/logout", (req, res) => {
 
 app.post("/register", (req,res) => {
   const userId = generateRandomString();
-  //console.log ('this is req.body', req.body)
   const userPassword = req.body.password;
   const accountEmail = req.body.email;
  
