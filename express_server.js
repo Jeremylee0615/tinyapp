@@ -1,20 +1,45 @@
 const express = require("express");
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
+const bcrypt = require("bcryptjs");
 const bodyParser = require('body-parser');
 const app = express();
 const PORT = 8080;
 
 app.use(bodyParser.urlencoded({ extended: true}));
-app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
+app.use(cookieSession({
+  name: 'session',
+  keys: ['userId']
+}));
 
+
+//////////////tiny app - localhost:8080/urls begins//////////////
+
+
+
+////////////////Global users'  information////////////////
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "a1b2c3"
+  },
+  "9sm5xK": {
+    longURL: "http://www.google.com",
+    userID: "d1e2f3"
+  }
+};
+
+const users = {
+  userRandomID: {
+    id: "abc123",
+    email : "abc123@example.com",
+    password: "def456",
+  }
 };
 
 
+////////////////Helper Functions////////////////
 const generateRandomString = () => {
   let upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   let lowerCase = upperCase.toLowerCase();
@@ -29,33 +54,45 @@ const generateRandomString = () => {
 };
 
 
-//Global users' set information
-const users = {
-  userRandomID: {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur",
-  },
-  user2RandomID: {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk",
-  },
+const newAdd = (newInfo, users) => {
+  const addId = generateRandomString();
+  newInfo.id = addId;
+  newInfo.password = bcrypt.hashSync(newInfo.password, 10);
+  users[addId] = newInfo;
+  return newInfo;
 };
 
-
-
-const usersAccountInfo = (email, users) => {
-  for (userId in users) {
-    if (users[userId].email === email) {
-      return users[userId]
-    }
+const checkUser = (cookie, users) => {
+  for (let userIds in users) {
+    if (cookie === userIds) 
+      return users[userIds].email
   }
 }
 
-const checkIfInUse = (email, userDatabase) => {
-  for (userId in userDatabase) {
-    if (userDatabase[userId].email === email) {
+
+const checkURL = (url, urlDatabase) => {
+  return urlDatabase[url];
+};
+
+
+const checkBelong = (userId, id, users) => {
+  return userId === users[id].usersID;
+};
+
+
+const getUserByEmail  = (email, users) => {
+  for (let userId in users) {
+    if (users[userId].email === email) {
+    return users[userId]
+    }
+  }
+  return undefined;
+};
+
+
+const checkIfInUse = (email, users) => {
+  for (let userId in users) {
+    if (users[userId].email === email) {
       return true;
     }
   }
@@ -63,9 +100,16 @@ const checkIfInUse = (email, userDatabase) => {
 };
 
 
+const urlsForUser = (id) => {
+  let userUrls  = {};
+  for (let info in urlDatabase) {
+    if (urlDatabase[info]["userID"] === id) {
+      urlDatabase[info] = urlDatabase[info];
 
-//////////////tiny app - localhost:8080/urls begins//////////////
-
+    }
+  }
+  return userUrls;
+}
 
 
 ////////////////GETS////////////////
@@ -73,98 +117,141 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+
 //updated the headlines for it to display the username
 app.get("/urls", (req, res) => {
-  const userId = req.cookies["userId"];
-  const templateVars = {
-    urls: urlDatabase,
-    userId: userId
-  };
+  const currentUser = checkUser(req.session["userId"], users)
+  if (!currentUser) {
+    res.redirect ("register");
+  } else {
+    const linksForUser = urlsForUser(currentUser)
+    const templateVars = {
+      urls: linksForUser,
+      userId: currentUser
+    };
   res.render("urls_index", templateVars);
-});
-
-//create new URL page
-app.get("/urls/new", (req, res) => {
-  if (!req.cookies["userId"]){
-    return res.redirect ("/login")
   }
-  const userId = req.cookies["userId"];
-  const templateVars = {
-    urls: urlDatabase,
-    userId: userId
-  };
-  res.render("urls_new", templateVars);
 });
 
-//long ID page
-app.get("/urls/:id", (req, res) => {
-  const id = req.params.id;
-  const longURL = urlDatabase[id];
-  const userId = req.cookies["userId"];
-  const templateVars = {id, longURL, userId};
-  res.render("urls_show", templateVars);
+
+/////create new URL page/////
+app.get("/urls/new", (req, res) => {
+  const currentUser = checkUser(req.session["userId"], users)
+  if (!currentUser) {
+    return res.redirect ("/login")
+  } else {
+    const templateVars = { 
+      userId: currentUser 
+    };
+    res.render("urls_new", templateVars);
+  }
 });
 
-//login page
+
+/////short ID page/////
+app.get('/urls/:shortURL', (req, res) => {
+  const shortURL = req.params.shortURL;
+  const currentUser = checkUser(req.session["userId"], users);
+  if (checkURL(shortURL, urlDatabase)) {
+    if (currentUser !== urlDatabase[shortURL].userID) {
+      res.send('This id does not belong to you');
+    } else {
+      const longURL = urlDatabase[shortURL].longURL;
+      let templateVars = { 
+        id: shortURL, 
+        longURL: longURL, 
+        userId: currentUser};
+      res.render('urls_show', templateVars);
+    }
+  } else {
+    res.send('This url does not exist');
+  }
+});
+
+
+
+
 app.get("/login", (req, res) => {
-  const userId = req.cookies["userId"];
-  const templateVars = { userId };
-  res.render("login", templateVars);
+  const currentUser = checkUser(req.session["userId"], users)
+  if (currentUser) {
+    res.redirect ("/urls")
+  } else {
+    const templateVars = { 
+      userId: currentUser
+    };
+    res.render("login", templateVars);
+  }  
 });
 
 
-//register page
+
+/////register page/////
 app.get("/register", (req, res) => {
-  const userId = req.cookies["userId"];
-  const templateVars = { userId };
-  res.render("register", templateVars);
+  const currentUser = checkUser(req.session["userId"], users)
+  if (currentUser) {    
+    res.redirect("/urls")
+  } else {
+    const templateVars = {
+      userId: currentUser
+    }
+    res.render("register", templateVars);
+  }
 });
 
-// tinyapp/u/shortURL page
+
+
+/////tinyapp/u/shortURL page/////
 app.get("/u/:id", (req, res) => {
-  const id = req.params.id;
-  const longURL = urlDatabase[id];
-  res.redirect(longURL);
+  const urlID = req.params.shortURL;
+  if (checkURL(urlID, urlDatabase)) {
+    const longURL = urlDatabase[urlID].longURL;
+    res.redirect(longURL);
+  } else {
+    res.status(404).send('Does not exist');
+  }
 });
 
 
 
 ////////////////POSTS////////////////
 app.post("/urls", (req, res) => {
-  if (!req.cookies["userId"]) {
-    res.status(400).send("Oops, we can\'t find that URL. Please check if you have entered correct URLs or Create your favourite URLs first⛔")
+  const currentUser = checkUser(req.session["userId"], users)
+  if (!currentUser) {
+    res.redirect("/login")
+  } else {
+  const urlID = generateRandomString();
+  const longURL = req.body.longURL
+    urlDatabase[urlID] = {
+    longURL: longURL,
+    userId: currentUser
   }
-    const shortURL = generateRandomString();
-    urlDatabase[shortURL] = req.body.longURL;
-    res.redirect(`/urls/${shortURL}`);
+  res.redirect(`/urls/${urlID}`);  
+  }
 });
+
 
 app.post("/login", (req, res) => {
     const emailEntered = req.body.email;  
     const passwordEntered = req.body.password;
-    if (usersAccountInfo(emailEntered, users)) {
-      const userPassword = usersAccountInfo(emailEntered, users).password
-      console.log('users from database:', usersAccountInfo(emailEntered, users))
-      const userId = usersAccountInfo(emailEntered, users).id;
-      if (userPassword !== passwordEntered) {
-        res.status(403).send("Password does not match. ⛔")
-      } else {
-        //res.cookie("userId", userId)
-        res.redirect("/urls");
-      }     
-    } else {
-      res.status(403).send("The email does not exist. ⛔")
+    const currentUser = getUserByEmail (emailEntered, users)
+    if (!currentUser) {
+      return res.status(403).send("The email does not exist. ⛔")
     }
+    if (!bcrypt.compareSync(passwordEntered, currentUser.password)){
+      return res.status(403).send("Password does not match. ⛔")
+    }
+    req.session.userId = currentUser.id
+    res.redirect("/urls"); 
   });
 
+
 app.post("/logout", (req, res) => {
-  const userId = req.body["userId"];
-  res.clearCookie("userId", userId);
+  req.session = null;
   res.redirect("/login");
 });
 
+
 app.post("/register", (req,res) => {
-  const userId = generateRandomString();
   const userPassword = req.body.password;
   const accountEmail = req.body.email;
  
@@ -172,31 +259,38 @@ app.post("/register", (req,res) => {
     return res.status(400).send("Please enter a valid information! ⛔");
   } else if (checkIfInUse(accountEmail, users)) {
     return res.status(400).send("Sorry, the email you registered is already in use 🚫 ");
+  } else {
+    const newId = newAdd(req.body, users);
+    req.session.userId = newId.id;
+    res.redirect('/urls');
   }
-  
-  const newUser = {
-    id: userId,
-    password: userPassword,
-    email: accountEmail
-  };
-
-  users[userId] = newUser;
-  //res.cookie("userId", userId);
-  res.redirect("/login");
-
 });
+
 
 app.post("/urls/:id/edit", (req,res) => {
-  const id = req.params.id;
-  urlDatabase[id] = req.body.longURL;
+  const currentUser = checkUser(req.session["userId"], users)
+  const urlID = req.params.id
+  if (!checkBelong (currentUser, urlID, urlDatabase)) {
+    res.status(400).send ("Sorry you do not have an access to edit this URL!⛔")
+  } else {
+  urlDatabase[urlID].longURL = req.body.longURL;
   res.redirect("/urls");
+  }
 });
 
+
 app.post("/urls/:id/delete", (req,res) => {
-  const id = req.params.id;
-  delete urlDatabase[id];
-  res.redirect("/urls");
+  const currentUser = checkUser(req.session["userId"], users)
+  const urlID = req.params.id
+  if (!checkBelong (currentUser, urlID, urlDatabase)) {
+    res.status(400).send ("Sorry you do not have an access to delete this URL!⛔")
+  } else {
+    delete urlDatabase[urlID];
+    res.redirect("/urls");
+  }
 });
+
+
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);

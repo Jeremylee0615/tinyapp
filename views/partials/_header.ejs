@@ -19,9 +19,9 @@
       </div>
     </div>
     <div>
-      <% if (userId) {%>
+      <% if (currentUser) {%>
         <form method="POST" action="/logout">
-          <a class="navbar-brand">👋 Welcome  <%= userId %> ! </a>
+          <a class="navbar-brand">👋 Welcome  <%= currentUser %> ! </a>
           <button type="submit" class="btn btn-outline-danger">Logout</button>
         </form>
       <% } else { %>
