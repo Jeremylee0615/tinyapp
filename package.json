@@ -2,7 +2,7 @@
   "name": "tinyapp",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "express_server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,7 +11,7 @@
     "url": "git+https://github.com/Jeremylee0615/tinyapp.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Jeremy Lee jeremylee0615@gmail.com",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Jeremylee0615/tinyapp/issues"
@@ -20,5 +20,8 @@
   "dependencies": {
     "ejs": "^3.1.9",
     "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
   }
 }
