@@ -6,8 +6,8 @@ app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 
 const urlDatabase = {
-  "b2xVn2": {longURL: "http://www.lighthouselabs.ca"},
-  "9sm5xK": {longURL: "http://www.google.com"}
+  "b2xVn2": "http://www.lighthouselabs.ca",
+  "9sm5xK": "http://www.google.com"
 };
 
 const generateRandomString = () => {
@@ -46,9 +46,15 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:id", (req, res) => {
   const id = req.params.id
   const longURL = urlDatabase[id]
-  const templateVars = { id, longURL};
-  res.render("urls_show", templateVars);
-  //res.redirect(longURL);
+  //const templateVars = { id, longURL};
+  //res.render("urls_show", templateVars);
+  res.redirect(longURL);
+});
+
+app.post("/urls/:id/delete", (req, res) => {
+  const id = req.params.id;
+  delete urlDatabase[id];
+  res.redirect(`/urls`);
 });
 
 app.listen(PORT, () => {
