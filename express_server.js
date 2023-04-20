@@ -27,13 +27,14 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+
+// Creat URL 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body); 
   let generatedURL = generateRandomString();
   urlDatabase[generatedURL] = req.body.longURL;
   res.redirect(`/urls/${generatedURL}`);
@@ -46,9 +47,19 @@ app.get("/urls/new", (req, res) => {
 app.get("/urls/:id", (req, res) => {
   const id = req.params.id
   const longURL = urlDatabase[id]
-  //const templateVars = { id, longURL};
-  //res.render("urls_show", templateVars);
-  res.redirect(longURL);
+  const templateVars = { id, longURL};
+  res.render("urls_show", templateVars);
+});
+
+app.post("/urls/:id", (req, res) => {
+  const id = req.params.id;
+  res.redirect(`/urls/${id}`);
+});
+
+app.post("/urls/:id/edit", (req, res) => {
+  const id = req.params.id;
+  urlDatabase[id] = req.body.longURL;
+  res.redirect(`/urls`);
 });
 
 app.post("/urls/:id/delete", (req, res) => {
