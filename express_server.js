@@ -1,5 +1,5 @@
 const express = require("express");
-const cookieParser = require("cookie-parser");
+var cookieParser = require("cookie-parser");
 const app = express();
 const PORT = 8080; 
 
@@ -9,12 +9,8 @@ app.use(cookieParser());
 
 
 const urlDatabase = {
-  "b2xVn2": { 
-    longURL: "http://www.lighthouselabs.ca"
-  },
-  "9sm5xK": {
-    longURL: "http://www.google.com"
-  }
+  "b2xVn2": "http://www.lighthouselabs.ca",
+  "9sm5xK": "http://www.google.com"
 };
 
 const users = {
@@ -30,6 +26,7 @@ const users = {
   },
 };
 
+/// Generates 6 digits of Random Strings consisting numbers and letters ///
 const generateRandomString = () => {
   let upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   let lowerCase = upperCase.toLowerCase();
@@ -43,13 +40,30 @@ const generateRandomString = () => {
   return result;
 };
 
+/// adding New user to users database ///
+const newUser = (user) => {
+ const newUserId = generateRandomString ()
+ /// storing the new generated user's id to the database /// 
+ user.id = newUserId;
+ users[newUserId] = user;
+ return user;
+}
+
+
+/// checking if URLS are stored/created in the database ///
+const checkUrls = (ids, urlDatabase) => {
+  return urlDatabase [ids];
+};
+
+
+/// checking if email is good to use ///
 const checkEmail = (email, users) => {
   for (let key in users) {
-    if (users[key.email] === email) {
-      return users[key];
+    if (users[key].email === email) {
+      return false;
     }
   }
-  return undefined;
+  return true;
 };
 
 
@@ -57,129 +71,135 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-
+/// URLs Front Page ///
 app.get("/urls", (req, res) => {
-  const user_id = req.cookies["user_id"]
   const templateVars = { 
     urls: urlDatabase, 
-    user_id,
-    user: users
+    user_id: req.cookies['user_id'] 
   };
   res.render("urls_index", templateVars);
 });
 
-app.post("/urls", (req, res) => {
-  const generatedURL = generateRandomString();
-  urlDatabase[generatedURL] = req.body.longURL;
-  res.redirect(`/urls/${generatedURL}`);
-});
-
+/// Create New URL Page ///
 app.get("/urls/new", (req, res) => {
-  const user_id = req.cookies["user_id"]
   const templateVars = { 
-    urls: urlDatabase, 
-    user_id,
-    user: users
+    user_id: 
+    req.cookies['user_id']
   };
   res.render("urls_new", templateVars);
 });
 
+///After Creating new URL Page///
 app.get("/urls/:id", (req, res) => {
   const id = req.params.id;
-  const user_id = req.cookies["user_id"]
-  const templateVars = { 
+  if (checkUrls(id, urlDatabase)) {
+    const longURL = urlDatabase[req.cookies.id];
+    const templateVars = { 
     id, 
-    longURL, 
-    user_id,
-    user: users
+    longURL 
   };
   res.render("urls_show", templateVars);
+ } else {
+  res.send ("does not exist")
+ };
 });
 
-app.post("/urls/:id", (req, res) => {
-  const id = req.params.id;
-  const longURL = req.body.longURL
-  urlDatabase[id] = longURL;
-  res.redirect(`/urls/${id}`);
-});
 
+/// Direct click to the site accociated with URLs ///
 app.get("/u/:id", (req, res) => {
-  const shortURL = req.params.id;
-  const longURL = urlDatabase[shortURL].longURL;
-  if (!longURL) {
-    res.status(404).send("URL not found");
-    return;
+  const id = req.params.id;
+  if (checkUrls(id, urlDatabase)) {
+    const longURL = urlDatabase[id];
+    res.redirect(longURL);
+  } else {
+  res.status(404).send("URLs not found");
   }
-  res.redirect(longURL);
 });
 
+
+/// Register Page///
 app.get("/register", (req, res) => {
-  const user_id = req.cookies["user_id"]
   const templateVars = { 
-    user_id,
-    user: users
+    user_id :req.cookies['user_id']
   };
   res.render("register", templateVars);
 });
 
-
-app.post("/register", (req, res) => {
-  //Generating userRandomId
-  const userRandomId = generateRandomString ()
-  // User Information
-  const userEmail = req.body.email;
-  const userPassword = req.body.password;
-  const existingUser = checkEmail (email, users);
-
-  //entered existing Emails
-  if (existingUser) {
-    return res.status(400).send ("Sorry, the email you registered is already in use 🚫 ") 
-  }
-
-  //entered Nothing
-  if (!userEmail || !userPassword) {
-    return  res.status(400).send("Please enter a valid information! ⛔")
-  }
-
-  req.session.userRandomId = currentUser
-  const currentUserInfo = {
-    id: userRandomId,
-    email: userEmail,
-    passowrd: userPassword
-  };
-
-  users[curruntUser] = currentUserInfo
-  res.redirect(`/urls`)
+/// Generating random shortURLs for the longURLs that is newly added ///
+app.post("/urls", (req, res) => {
+  const generatedURL = generateRandomString();
+  const longURL = req.body.longURL;
+  urlDatabase[generatedURL] = longURL
+  res.redirect(`/urls/${generatedURL}`);
 });
 
+
+
 app.get("/login", (req, res) => {
-  const user_id = req.cookies["user_id"]
   const templateVars = { 
-    user_id, 
-    user: users };
+    email: null,
+  };
   res.render("login", templateVars);
 });
 
+
+
+/// After adding new URL auto-redirect to the URL info Page ///
+app.post("/urls/:id", (req, res) => {
+  const id = req.params.id;
+  res.redirect(`/urls/${id}`);
+});
+
+
+/// User Registration function ///
+app.post("/register", (req, res) => {
+  const userEmail = req.body.email;
+  const userPassword = req.body.password;
+  
+  /// Missing email input ///
+  if (userEmail === '') {
+    return  res.status(400).send("Email is missing! ⛔")
+  /// Missing passward input ///
+  } else if (userPassword === '') {
+    return  res.status(400).send("Password is missing! ⛔")
+  /// Entered existing emails /// 
+  } else if (!checkEmail (userEmail, users)) {
+    return res.status(400).send ("Sorry, the email you registered is already in use 🚫 ") 
+  }
+  
+  addNew = newUser (req.body)
+  res.cookie ('user_id', addNew.id)
+  res.redirect('/urls');
+});
+
 app.post("/login", (req, res) => {
-  res.cookie("user_id", req.body.username);
-  res.redirect("/urls");
+  const userEmail = req.body.email;
+  const userPassword = req.body.password;
+  for (const user_id in users) {
+    if (users[user_id].email === userEmail &&
+        users[user_id].password === userPassword      
+      )
+      res.redirect("/urls");
+    }
+  return res.status(400).send ("The Information you have entered does not match. ⛔")
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie('user_id');
-  res.redirect(`/urls`);
+  res.clearCookie('user_id', req.body["user_id"]);
+  res.redirect("/login");
 });
 
 app.post("/urls/:id/edit", (req, res) => {
   const id = req.params.id;
-  urlDatabase[id] = req.body.longURL;
-  res.redirect(`/urls`);
+  const longURL = req.body.longURL
+  urlDatabase[id] = longURL;
+  res.redirect("/urls");
 });
 
 app.post("/urls/:id/delete", (req, res) => {
   const id = req.params.id;
   delete urlDatabase[id];
-  res.redirect(`/urls`);
+  res.redirect("/urls");
 });
 
 app.listen(PORT, () => {
