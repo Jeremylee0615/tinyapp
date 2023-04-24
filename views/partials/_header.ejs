@@ -19,9 +19,9 @@
       </div>
     </div>
     <div>
-      <% if(user_id){ %>
+      <% if(currentUser){ %>
         <form class="form-inline" action="/logout" method="POST">
-          <a class="navbar-brand">👋 Welcome : <%= user_id %> !</a>
+          <a class="navbar-brand">👋 Welcome : <%= currentUser %> !</a>
           <button type="submit" class="btn btn-outline-danger">Sign Out</button>  
           </form>
       <% } else { %>      
