@@ -9,8 +9,12 @@ app.use(cookieParser());
 
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca", 
+    user_id: "abc123"},
+  "9sm5xK": {
+    longURL: "http://www.google.com", 
+    user_id: "abc123"}
 };
 
 const users = {
@@ -20,14 +24,6 @@ const users = {
     password: "man-I-hate-this",}
 };
 
-/// checking Currently signed in user ///
-const userNow = (cookie) => {
-  for (let user in users) {
-    if (cookie === user) {
-      return users[user].id;
-    }
-  }
-};
 
 /// Generates 6 digits of Random Strings consisting numbers and letters ///
 const generateRandomString = () => {
@@ -52,12 +48,35 @@ const newUser = (user) => {
  return user;
 }
 
-
-/// checking if URLS are stored/created in the database ///
-const checkUrls = (ids, urlDatabase) => {
-  return urlDatabase [ids];
+/// checking Currently signed in user ///
+const userNow = (ids, users) => {
+  for (let user in users) {
+    if (ids === user) {
+      return users[user].id;
+    }
+  }
 };
 
+/// Only User can see their URLs ///
+const userOnlyURLs = (id, urlDatabase) => {
+  const userURL = {};
+  for (let key in urlDatabase) {
+    if (urlDatabase[key].user_id === id) {
+      userURL[key] = urlDatabase[key];
+    }
+  }
+  return userURL
+};
+
+/// checking if URLS are stored/created in the database ///
+const checkUrls = (id, urlDatabase) => {
+  return urlDatabase [id];
+};
+
+/// checking if the users are eligible to modify URLs (checking its theirs or not) ///
+const isOwner = (user, id, urlDatabase) => {
+  return user === urlDatabase[id].user_id
+}
 
 /// checking if email is available to use ///
 const checkAvailEmail = (email, users) => {
@@ -70,7 +89,6 @@ const checkAvailEmail = (email, users) => {
 };
 
 /// checking if user's info associated with email matched in database ///
-
 const verifyInfo = (email, users) => {
   for (let key in users) {
     if (users[key].email === email) {
@@ -80,82 +98,17 @@ const verifyInfo = (email, users) => {
   return undefined;
 };
 
+
+
+
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
-});
-
-//////////////////// URLs main Page ////////////////////
-app.get("/urls", (req, res) => {
-  const currentUser = userNow(req.cookies['user_id'])
-  const templateVars = { 
-    urls: urlDatabase, 
-    currentUser: currentUser
-  };
-  res.render("urls_index", templateVars);
-});
-
-/// Generating random shortURLs for the longURLs that is newly added ///
-app.post("/urls", (req, res) => {
-  const generatedURL = generateRandomString();
-  const longURL = req.body.longURL;
-  urlDatabase[generatedURL] = longURL
-  res.redirect(`/urls/${generatedURL}`);
-});
-
-
-//////////////////// Create New URL Page ////////////////////
-app.get("/urls/new", (req, res) => {
-  const currentUser = userNow(req.cookies['user_id'])
-  if (!currentUser) {
-    res.redirect('/login');
-  }
-
-  const templateVars = { 
-   currentUser : currentUser
-  };
-
-  res.render("urls_new", templateVars);
-});
-
-//////////////////// After Creating new URL Page ////////////////////
-app.get("/urls/:id", (req, res) => {
-  const id = req.params.id;
-  if (checkUrls(id, urlDatabase)) {
-    const longURL = urlDatabase[req.cookies.id];
-    const currentUser = userNow(req.cookies['user_id'])
-    const templateVars = { 
-    id: id,
-    longURL: longURL,
-    currentUser : currentUser
-  };
-  res.render("urls_show", templateVars);
- } else {
-  res.send ("does not exist")
- };
-});
-
-/// After adding new URL auto-redirect to the URL info Page ///
-app.post("/urls/:id", (req, res) => {
-  const id = req.params.id;
-  res.redirect(`/urls/${id}`);
-});
-
-
-//////////////////// Direct to the URL site ////////////////////
-app.get("/u/:id", (req, res) => {
-  const id = req.params.id;
-  if (checkUrls(id, urlDatabase)) {
-    const longURL = urlDatabase[id];
-    res.redirect(longURL);
-  } else {
-  res.status(404).send("URLs not found");
-  }
 });
 
 
 //////////////////// Register Page ////////////////////
 app.get("/register", (req, res) => {
-  const currentUser = userNow(req.cookies['user_id'])
+  const currentUser = userNow(req.cookies['user_id'], users)
   const templateVars = { 
     currentUser: currentUser
   };
@@ -186,7 +139,7 @@ app.post("/register", (req, res) => {
 //////////////////// Login Page ////////////////////
 
 app.get("/login", (req, res) => {
-  const currentUser = userNow(req.cookies['user_id'])
+  const currentUser = userNow(req.cookies['user_id'], users)
   const templateVars = { 
     currentUser: currentUser,
   };
@@ -211,26 +164,120 @@ app.post("/login", (req, res) => {
   } 
 });
 
-/// Log Out function ///
-app.post("/logout", (req, res) => {
-  res.clearCookie('user_id');
-  res.redirect("/login");
+//////////////////// URLs main Page ////////////////////
+app.get("/urls", (req, res) => {
+  const currentUser = userNow(req.cookies['user_id'], users)
+  if (!currentUser) {
+    res.status(400).send("Please Log in or Register First! ⛔")
+  }
+  const userURLs = userOnlyURLs(currentUser, urlDatabase)
+  const templateVars = { 
+    urls: userURLs, 
+    currentUser: currentUser
+  };
+  res.render("urls_index", templateVars);
+});
+
+/// Generating random shortURLs for the longURLs that is newly added ///
+app.post("/urls", (req, res) => {
+  const generatedURL = generateRandomString();
+  const longURL = req.body.longURL;
+  const currentUser = userNow(req.cookies['user_id'], users);
+  urlDatabase[generatedURL] = {
+    longURL: longURL,
+    user_id: currentUser
+  };
+  res.redirect(`/urls/${generatedURL}`);
 });
 
 
+//////////////////// Create New URL Page ////////////////////
+app.get("/urls/new", (req, res) => {
+  const currentUser = userNow(req.cookies['user_id'], users)
+  if (!currentUser) {
+    res.redirect('/login');
+  }
+
+  const templateVars = { 
+   currentUser : currentUser
+  };
+
+  res.render("urls_new", templateVars);
+});
+
+//////////////////// After Creating new URL Page ////////////////////
+app.get("/urls/:id", (req, res) => {
+  const id = req.params.id;
+  const currentUser = userNow(req.cookies['user_id'], users)
+  /// if users manually type URL links that does not exist /// 
+  if (!urlDatabase[id]) {
+    res.status(400).send("The URL link does not exist 🚫")
+  /// if users manually type the URL links that they did not create ///
+  } else if (currentUser !== urlDatabase[id].user_id) {
+  res.status(400).send("Sorry, you do not have access to this links ⛔");
+    }
+  if (checkUrls(id, urlDatabase)) {
+    const longURL = urlDatabase[id].longURL;
+    const currentUser = userNow(req.cookies['user_id'], users)
+    const templateVars = { 
+    id: id,
+    longURL: longURL,
+    currentUser : currentUser
+  };
+  res.render("urls_show", templateVars);
+ } else {
+  res.send ("URLs not found")
+ };
+});
+
+//////////////////// Direct to the URL site ////////////////////
+app.get("/u/:id", (req, res) => {
+  const id = req.params.id;
+  if (checkUrls(id, urlDatabase)) {
+    const longURL = urlDatabase[id].longURL;
+    res.redirect(longURL);
+  } else {
+  res.status(404).send("URLs not found");
+  }
+});
+
 /// editing URL function ///
 app.post("/urls/:id/edit", (req, res) => {
+  /// Check for LogIn first to pass through the other conditions ///  
+  if (!req.cookies['user_id']) {
+    res.status(400).send("Please Log in or Register First! ⛔");
+  } 
   const id = req.params.id;
   const longURL = req.body.longURL
-  urlDatabase[id] = longURL;
+  const currentUser = userNow(req.cookies['user_id'], users)
+  if (!isOwner (currentUser, id, urlDatabase)) {
+    res.status(400).send("Sorry, This URL does not belong to you to modify ⛔");
+  } else {
+  urlDatabase[id].longURL = longURL ;
   res.redirect("/urls");
+  }
 });
 
 /// deleting URL function ///
 app.post("/urls/:id/delete", (req, res) => {
+/// Check for LogIn first to pass through the other conditions ///  
+  if (!req.cookies['user_id']) {
+    res.status(400).send("Please Log in or Register First! ⛔");
+  } 
   const id = req.params.id;
+  const currentUser = userNow(req.cookies['user_id'], users)
+  if (!isOwner (currentUser, id, urlDatabase)) {
+    res.status(400).send("Sorry, This URL does not belong to you to modify ⛔");
+  } else {
   delete urlDatabase[id];
   res.redirect("/urls");
+  }
+});
+
+/// Log Out function ///
+app.post("/logout", (req, res) => {
+  res.clearCookie('user_id');
+  res.redirect("/login");
 });
 
 app.listen(PORT, () => {
