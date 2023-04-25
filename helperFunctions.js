@@ -26,7 +26,7 @@ const newUser = (user, users) => {
 const userNow = (ids, users) => {
   for (let user in users) {
     if (ids === user) {
-      return users[user].id;
+      return users[user].email;
     }
   }
 };
