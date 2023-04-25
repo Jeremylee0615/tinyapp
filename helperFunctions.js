@@ -15,12 +15,12 @@ const generateRandomString = () => {
 
 /// adding New user to users database ///
 const newUser = (user, users) => {
- const newUserId = generateRandomString ()
- /// storing the new generated user's id to the database /// 
- user.id = newUserId;
- users[newUserId] = user;
- return user;
-}
+  const newUserId = generateRandomString();
+  /// storing the new generated user's id to the database ///
+  user.id = newUserId;
+  users[newUserId] = user;
+  return user;
+};
 
 /// checking Currently signed in user ///
 const userNow = (ids, users) => {
@@ -39,7 +39,7 @@ const userOnlyURLs = (id, urlDatabase) => {
       userURL[key] = urlDatabase[key];
     }
   }
-  return userURL
+  return userURL;
 };
 
 /// checking if URLS are stored/created in the database ///
@@ -49,8 +49,8 @@ const checkUrls = (id, urlDatabase) => {
 
 /// checking if the users are eligible to modify URLs (checking its theirs or not) ///
 const isOwner = (user, id, urlDatabase) => {
-  return user === urlDatabase[id].user_id
-}
+  return user === urlDatabase[id].user_id;
+};
 
 /// checking if email is available to use ///
 const checkAvailEmail = (email, users) => {
@@ -74,4 +74,4 @@ const verifyInfo = (email, users) => {
 
 
 
-module.exports = {generateRandomString, newUser, userNow, userOnlyURLs, checkUrls, isOwner, checkAvailEmail, verifyInfo}; 
+module.exports = {generateRandomString, newUser, userNow, userOnlyURLs, checkUrls, isOwner, checkAvailEmail, verifyInfo};
